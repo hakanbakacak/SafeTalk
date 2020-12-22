@@ -1,6 +1,8 @@
+import 'package:e2ee_messaging_app/model/services/chatRoomService.dart';
 import 'package:e2ee_messaging_app/view/chats.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'model/services/userService.dart';
 
 class LoginPage extends StatefulWidget {
   static String tag = 'login-page';
@@ -9,10 +11,21 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+
+  final usernameTextController = TextEditingController();
+  final passwordTextController = TextEditingController();
+  
+  @override
+  void dispose() {
+    // Clean up the controller when the widget is disposed.
+    usernameTextController.dispose();
+    passwordTextController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final usernameTextController = TextEditingController();
-    final passwordTextController = TextEditingController();
+    
 
     final email = TextFormField(
       controller: usernameTextController,
@@ -50,8 +63,10 @@ class _LoginPageState extends State<LoginPage> {
           /*
           burada Login fonksiyonu çağırılarak userID alınabilir.
           */ 
+          ChatRoomService.instance.roomList;
           print("username:" + email.controller.text);
           print("password:" + password.controller.text);
+
           Navigator.push(
               context,
               MaterialPageRoute(

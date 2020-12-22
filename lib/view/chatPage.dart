@@ -1,4 +1,5 @@
 
+import 'package:e2ee_messaging_app/model/core/chatRoomModel.dart';
 import 'package:flutter/material.dart';
 
 
@@ -143,8 +144,15 @@ final ThemeData kDefaultTheme = ThemeData(
 class ChatScreen extends StatefulWidget {
 
   String roomId;
-  
+  ChatRoomModel chatRoom;
+
   ChatScreen({this.roomId});
+  
+  
+  void getRoomInfo(){
+    //TODO service'i kullanarak oda bilgilerini al
+    chatRoom = ChatRoomModel(id:"3", messageIdList: ["10", "12"], name: "Machine Learning Chat Roow", userIdList: ["341", "41230"] ); 
+  }
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -157,7 +165,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   bool _isComposing = false;
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    widget.getRoomInfo();
+  }
+
+  @override
   void dispose() {
+    _textController.dispose();
     for (ChatMessage message in _messages)
       message.animationController.dispose();
     super.dispose();
@@ -249,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         home: Scaffold(
           appBar: AppBar(
               //backgroundColor: Color(0xffE63323),
-              title: Text('Data Security Chat Room')),
+              title: Text(widget.chatRoom.name)),
           body: Column(
             children: [
               Flexible(
