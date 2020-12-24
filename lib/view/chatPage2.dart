@@ -1,6 +1,8 @@
-/*import 'package:e2ee_messaging_app/model/core/chatRoomModel.dart';
+import 'package:e2ee_messaging_app/model/core/chatRoomModel.dart';
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/io.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 
 List<String> botMessages = [
   "there will be no lesson this week",
@@ -35,11 +37,11 @@ List<String> botMessages2 = [
   ""
 ];
 //List<String> botMessages = ["Merhaba, bu hafta dijital asistan ile 3 işlem gerçekleştirdiniz. Türk Telekomdan hediye paket kazandınız.\nLütfen hediyenizi seçin\n1. İnternet\n2. Dakika\n3. SMS", "2 GB İnternet hattınıza tanımlanmıştır, iyi günler dilerim", "","", "", "", ""];
-
+const String _name = "Hakan Bakacak";
 int botIndex = 0;
 
 class ChatScreen extends StatefulWidget {
-  final channel = IOWebSocketChannel.connect('ws://echo.websocket.org');
+ 
   String roomId;
   String userId;
   ChatRoomModel chatRoom = ChatRoomModel(
@@ -60,15 +62,33 @@ class ChatScreen extends StatefulWidget {
   }
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  _ChatScreenState createState() => _ChatScreenState("title");
 }
 
 class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
-  final List<ChatMessage> _messages = [];
-  final _textController = TextEditingController();
+
+    final _title;
+  final List<ChatMessage> _messages;
+  final TextEditingController _textController;
+  final DatabaseReference _messageDatabaseReference;
+  final StorageReference _photoStorageReference;
   final FocusNode _focusNode = FocusNode();
-  bool _isComposing = false;
   int i = 0;
+  bool _isComposing = false;
+
+  _ChatScreenState(String title)
+      : _title = title,
+        _isComposing = false,
+        _messages = <ChatMessage>[],
+        _textController = TextEditingController(),
+        _messageDatabaseReference =
+            FirebaseDatabase.instance.reference().child("messages"),
+        _photoStorageReference =
+            FirebaseStorage.instance.ref().child("chat_photos") {
+    _messageDatabaseReference.onChildAdded.listen(_onMessageAdded);
+  }
+
+  
 
   @override
   void initState() {
@@ -79,12 +99,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    widget.channel.sink.close();
     _textController.dispose();
     for (ChatMessage message in _messages)
       message.animationController.dispose();
     super.dispose();
   }
+  void _onMessageAdded(Event event) {
+    final text = event.snapshot.value["text"];
+    final imageUrl = event.snapshot.value["imageUrl"];
+
+    ChatMessage message = imageUrl == null
+        ? _createMessageFromText(text)
+        : _createMessageFromImage(imageUrl);
+
+    setState(() {
+      _messages.insert(0, message);
+    });
+
+    message.animationController.forward();
+  }
+
+   ChatMessage _createMessageFromText(String text) => ChatMessage(
+        text: text,
+        username: _name,
+        animationController: AnimationController(
+          duration: Duration(milliseconds: 180),
+          vsync: this,
+        ),
+      );
+
+  ChatMessage _createMessageFromImage(String imageUrl) => ChatMessage(
+        imageUrl: imageUrl,
+        username: _name,
+        animationController: AnimationController(
+          duration: Duration(milliseconds: 90),
+          vsync: this,
+        ),
+      );
 
   Widget _buildTextComposer() {
     return IconTheme(
@@ -125,11 +176,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _handleSubmitted(String text) {
-    widget.channel.sink.add(text);
     _textController.clear();
-
+    
     ChatMessage message = ChatMessage(
-      isBot: false,
+      username: "hakan",
+      imageUrl: "https://avatars2.githubusercontent.com/u/22100241?s=460&u=fcc5bd24a8419cafaba4ab6c8507dd7defba9591&v=4",
       text: text,
       animationController: AnimationController(
         // NEW
@@ -137,7 +188,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         vsync: this, // NEW
       ), // NEW
     ); // NEW
-
+    _messageDatabaseReference.push().set(message.toMap());
     setState(() {
       _messages.insert(0, message);
       _isComposing = false;
@@ -147,39 +198,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     message.animationController.forward();
   }
 
-  void _handleBotMessage() {
-    /////////////////////////////
-    ChatMessage botMessage = ChatMessage(
-      isBot: true,
-      text: botMessages[BotMesagge.index++],
-      animationController: AnimationController(
-        // NEW
-        duration: const Duration(milliseconds: 400), // NEW
-        vsync: this, // NEW
-      ), // NEW
-    );
-    setState(() {
-      _messages.insert(0, botMessage);
-    });
-    _focusNode.requestFocus();
-    botMessage.animationController.forward();
-  }
+ 
 
-  void addMessageToList(String text) {
-    print("AddMessageToList: " + text);
-    ChatMessage message = ChatMessage(
-      isBot: false,
-      text: text,
-      animationController: AnimationController(
-        // NEW
-        duration: const Duration(milliseconds: 400), // NEW
-        vsync: this, // NEW
-      ), // NEW
-    );
-
-    _messages.insert(0, message);
-    _isComposing = false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +212,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             child: FloatingActionButton(
               onPressed: () {
                 _handleSubmitted(DateTime.now().second.toString());
-                //widget.channel.sink.add(DateTime.now().second.toString());
               },
             ),
           ),
@@ -202,38 +221,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           body: Column(
             children: [
               Flexible(
-                child: StreamBuilder(
-                  stream: widget.channel.stream,
-                  builder: (context, snapshot) {
-                    //_handleSubmitted(snapshot.hasData ? snapshot.data : "");
-                    //if (snapshot.hasData) {
-                    //var data = snapshot.data;
-                    //addMessageToList(data);
-                    switch (snapshot.connectionState) {
-                      case ConnectionState.waiting:
-                      case ConnectionState.none:
-                        return Center(child: CircularProgressIndicator());
-                        break;
-                      case ConnectionState.active:
-                      case ConnectionState.done:
-                        ChatMessage message = ChatMessage(
-                          isBot: false,
-                          text: snapshot.data,
-                          animationController: AnimationController(
-                            // NEW
-                            duration: const Duration(milliseconds: 400), // NEW
-                            vsync: this, // NEW
-                          ), // NEW
-                        );
-                        return ListView.builder(
-                          reverse: true,
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            return _messages[index];
-                          },
-                        );
-                    }
-                  },
+                child: ListView.builder(
+                  padding: EdgeInsets.all(8.0),
+                  reverse: true,
+                  itemBuilder: (_, int index) => _messages[index],
+                  itemCount: _messages.length, // NEW
                 ),
               ),
               Divider(height: 1.0), // NEW
@@ -351,22 +343,56 @@ final ThemeData kDefaultTheme = ThemeData(
 );
 
 class ChatMessage extends StatelessWidget {
-  ChatMessage({this.text, this.animationController, this.isBot});
-  final AnimationController animationController;
   final String text;
-  bool isBot;
+  final String imageUrl;
+  final String username;
+  final AnimationController animationController;
+
+  ChatMessage({
+    String text,
+    String imageUrl,
+    String username,
+    AnimationController animationController,
+  })  : text = text,
+        imageUrl = imageUrl,
+        username = username,
+        animationController = animationController;
+
+  Map<String, dynamic> toMap() => imageUrl == null
+      ? {'text': text, 'username': username}
+      : {'imageUrl': imageUrl, 'username': username};
+
   @override
   Widget build(BuildContext context) {
     return SizeTransition(
-      sizeFactor:
-          CurvedAnimation(parent: animationController, curve: Curves.easeOut),
-      axisAlignment: 0.0,
-      child: isBot
-          ? BotMesagge(
-              message: text,
-            )
-          : UserMessage(message: text),
-    );
+        sizeFactor:
+            CurvedAnimation(parent: animationController, curve: Curves.easeOut),
+        axisAlignment: 0.0,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 10.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                margin: const EdgeInsets.only(right: 16.0),
+                child: CircleAvatar(child: Text(username[0])),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(username, style: Theme.of(context).textTheme.subhead),
+                    Container(
+                      margin: const EdgeInsets.only(top: 5.0),
+                      child: imageUrl == null
+                          ? Text(text)
+                          : Image.network(imageUrl),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ));
   }
 }
-*/

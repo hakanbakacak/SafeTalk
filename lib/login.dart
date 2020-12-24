@@ -1,3 +1,4 @@
+import 'package:e2ee_messaging_app/model/core/userModel.dart';
 import 'package:e2ee_messaging_app/model/services/chatRoomService.dart';
 import 'package:e2ee_messaging_app/view/chats.dart';
 import 'package:flutter/material.dart';
@@ -63,14 +64,14 @@ class _LoginPageState extends State<LoginPage> {
           /*
           burada Login fonksiyonu çağırılarak userID alınabilir.
           */ 
-          ChatRoomService.instance.roomList;
+          //var user = UserService.instance.login(email.controller.text);
           print("username:" + email.controller.text);
           print("password:" + password.controller.text);
 
           Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ChatsPage(userId: email.controller.text,),
+                builder: (context) => ChatsPage(userId: "5fe1dc0f27d47c3fa43648c9",),
               ));},
         padding: EdgeInsets.all(12),
         color: Colors.white,

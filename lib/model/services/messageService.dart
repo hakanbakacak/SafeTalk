@@ -1,4 +1,36 @@
-import 'package:http/http.dart' as http;
+import 'package:e2ee_messaging_app/model/core/messageModel.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/status.dart' as status;
+
+class MessageService{
+  final channel = IOWebSocketChannel.connect('ws://echo.websocket.org');
+  static MessageService _instance;
+
+   static MessageService get instance{
+    if(_instance == null){
+      _instance = MessageService._init();
+    }
+    
+    return _instance;  
+  }
+  MessageService._init(){
+
+  }
+   
+  Future<List<MessageModel>> getMessage(){
+    
+    //List<MessageModel> list = [MessageModel(encryptedText: "asdsa", roomId: "2", sId: "2", senderId: "2"), MessageModel(encryptedText: "mesaj2", roomId: "2", sId: "2", senderId: "2")]
+
+    //Future.delayed(Duration(seconds: 2));
+    //return list;
+    
+  }
+  //state menagement ile buradan dinle diğer tarafta consume
+
+
+}
+
+
 
 /*class CatPhotoApi {
   String endpoint = "api.thecatapi.com";

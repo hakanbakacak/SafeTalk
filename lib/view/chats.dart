@@ -1,6 +1,8 @@
 import 'package:e2ee_messaging_app/main.dart';
 import 'package:e2ee_messaging_app/model/core/chatRoomModel.dart';
-import 'package:e2ee_messaging_app/view/chatPage.dart';
+import 'package:e2ee_messaging_app/model/services/authentication.dart';
+import 'package:e2ee_messaging_app/model/services/chatRoomService.dart';
+import 'package:e2ee_messaging_app/view/chatPage2.dart';
 import 'package:flutter/material.dart';
 
 
@@ -13,7 +15,7 @@ List<ChatRoomModel> roomList = [
 String lastMessage = "Last Message From Web Socket";
 
 List<String> nameList = [
-  "Semih Şentürk",
+  "Eda Ayaz",
   "Hakan Bakacak",
   "Cenkay Başaran",
   "Enes Dindaş",
@@ -35,9 +37,12 @@ List<String> messageList = [
 
 class ChatsPage extends StatelessWidget {
 
-  String userId;
+  ChatsPage({Key key, this.auth, this.userId, this.logoutCallback})
+      : super(key: key);
 
-  ChatsPage({this.userId});
+  final BaseAuth auth;
+  final VoidCallback logoutCallback;
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +86,31 @@ class ChatsPage extends StatelessWidget {
               textScaleFactor: 1.2,
             ),
           ),
+          /*Expanded(
+                      child: FutureBuilder(
+              future: ChatRoomService.instance.initClass(),
+              builder: (context, snapshot) {
+                if(snapshot.hasData){
+                  return ListView.builder(
+              itemCount: roomList.length,
+              itemBuilder: (context, index) {
+                return Column(
+                  children: [
+                    CustomListTile(
+                      name: roomList[index].name,
+                      lastMessage: lastMessage,
+                      time: "11:" + (index * 5 + 10).toString(),
+                      roomId: roomList[index].id,
+                    ),
+                    Divider()
+                  ],
+                );
+              },
+            );
+                }
+              },
+            ),
+          )*/
           Expanded(
               child: ListView.builder(
             itemCount: roomList.length,
@@ -92,6 +122,7 @@ class ChatsPage extends StatelessWidget {
                     lastMessage: lastMessage,
                     time: "11:" + (index * 5 + 10).toString(),
                     roomId: roomList[index].id,
+                    userId: userId,
                   ),
                   Divider()
                 ],
@@ -109,14 +140,15 @@ class CustomListTile extends StatelessWidget {
   String lastMessage;
   String time;
   String roomId;
+  String userId;
 
-  CustomListTile({this.name, this.lastMessage, this.time, this.roomId});
+  CustomListTile({this.name, this.lastMessage, this.time, this.roomId, this.userId});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ChatScreen(roomId: roomId,)));
+        Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ChatScreen(roomId: roomId, userId:this.userId,)));
       },
           child: Container(
         child: Row(
@@ -159,3 +191,22 @@ class CustomListTile extends StatelessWidget {
     );
   }
 }
+/*
+Expanded(
+              child: ListView.builder(
+            itemCount: roomList.length,
+            itemBuilder: (context, index) {
+              return Column(
+                children: [
+                  CustomListTile(
+                    name: roomList[index].name,
+                    lastMessage: lastMessage,
+                    time: "11:" + (index * 5 + 10).toString(),
+                    roomId: roomList[index].id,
+                  ),
+                  Divider()
+                ],
+              );
+            },
+          ))
+*/
