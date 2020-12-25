@@ -123,6 +123,8 @@ class ChatsPage extends StatelessWidget {
                     time: "11:" + (index * 5 + 10).toString(),
                     roomId: roomList[index].id,
                     userId: userId,
+                    auth: auth,
+                    logoutCallback: logoutCallback,
                   ),
                   Divider()
                 ],
@@ -136,19 +138,21 @@ class ChatsPage extends StatelessWidget {
 }
 
 class CustomListTile extends StatelessWidget {
+  final BaseAuth auth;
+  final VoidCallback logoutCallback;
   String name;
   String lastMessage;
   String time;
   String roomId;
   String userId;
 
-  CustomListTile({this.name, this.lastMessage, this.time, this.roomId, this.userId});
+  CustomListTile({this.name,this.auth, this.logoutCallback, this.lastMessage, this.time, this.roomId, this.userId});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ChatScreen(roomId: roomId, userId:this.userId,)));
+        Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ChatScreen(roomId: roomId, userId:this.userId, auth: auth, onSignedOut: logoutCallback,)));
       },
           child: Container(
         child: Row(

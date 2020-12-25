@@ -10,6 +10,8 @@ enum AuthStatus {
   LOGGED_IN,
 }
 
+String userEmail;
+
 class RootPage extends StatefulWidget {
   RootPage({this.auth});
 
@@ -78,10 +80,11 @@ class _RootPageState extends State<RootPage> {
         break;
       case AuthStatus.LOGGED_IN:
         if (_userId.length > 0 && _userId != null) {
-          return new ChatsPage(
+          return new ChatsPage(//
             userId: _userId,
             auth: widget.auth,
             logoutCallback: logoutCallback,
+            
           );
         } else
           return buildWaitingScreen();
@@ -134,6 +137,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       try {
         if (_isLoginForm) {
           userId = await widget.auth.signIn(_email, _password);
+          userEmail = _email;
           print('Signed in: $userId');
         } else {
           userId = await widget.auth.signUp(_email, _password);
@@ -183,7 +187,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   Widget build(BuildContext context) {
     return new Scaffold(
         appBar: new AppBar(
-          title: new Text('Flutter login demo'),
+          title: new Text('SafeTalk Login Page'),
         ),
         body: Stack(
           children: <Widget>[
@@ -269,7 +273,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         padding: EdgeInsets.fromLTRB(0.0, 70.0, 0.0, 0.0),
         child: CircleAvatar(
           backgroundColor: Colors.transparent,
-          radius: 48.0,
+          radius: 60.0,
           child: Image.asset('assets/logo.png'),
         ),
       ),

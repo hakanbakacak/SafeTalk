@@ -1,4 +1,7 @@
 import 'package:e2ee_messaging_app/model/core/chatRoomModel.dart';
+import 'package:e2ee_messaging_app/model/services/authentication.dart';
+import 'package:e2ee_messaging_app/view/rootPage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -20,37 +23,24 @@ List<String> botMessages = [
   "",
   ""
 ];
-List<String> botMessages2 = [
-  "Merhaba! ben dijital asistan TOT :) size nasıl yardımcı olabilirim?",
-  "23/06/2020 -> 76.54TL\n22/07/2020 -> 78.23TL\nLütfen ödemesini yapmak istediğiniz faturanın tarihini ay/yıl şeklinde giriniz. (örn:07/20)",
-  "Lütfen ödeme yapmak istediğiniz kredi kartının son 4 hanesini giriniz.",
-  "23/06/2020 tarihli 76 lira 56 kuruş değerindeki faturayı ödeme işlemini onaylıyor musunuz?",
-  "İşleminiz başarıyla tamamlandı. İyi günler dilerim :)",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  ""
-];
+
 //List<String> botMessages = ["Merhaba, bu hafta dijital asistan ile 3 işlem gerçekleştirdiniz. Türk Telekomdan hediye paket kazandınız.\nLütfen hediyenizi seçin\n1. İnternet\n2. Dakika\n3. SMS", "2 GB İnternet hattınıza tanımlanmıştır, iyi günler dilerim", "","", "", "", ""];
 const String _name = "Hakan Bakacak";
 int botIndex = 0;
 
 class ChatScreen extends StatefulWidget {
- 
+  String username;
   String roomId;
   String userId;
+  final BaseAuth auth;
+  final VoidCallback onSignedOut;
   ChatRoomModel chatRoom = ChatRoomModel(
       id: "3",
       messageIdList: ["10", "12"],
       name: "Machine Learning Chat Roow",
       userIdList: ["341", "41230"]);
 
-  ChatScreen({this.roomId, this.userId});
+  ChatScreen({this.roomId, this.auth, this.onSignedOut, this.userId, this.username});
 
   void getRoomInfo() {
     //TODO service'i kullanarak oda bilgilerini al
@@ -93,15 +83,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     // TODO: implement initState
-    super.initState();
     widget.getRoomInfo();
+    super.initState();
+    
   }
-
+  
   @override
   void dispose() {
     _textController.dispose();
     for (ChatMessage message in _messages)
       message.animationController.dispose();
+      widget.onSignedOut.call();
     super.dispose();
   }
   void _onMessageAdded(Event event) {
@@ -121,7 +113,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
    ChatMessage _createMessageFromText(String text) => ChatMessage(
         text: text,
-        username: _name,
+        username: userEmail!=null?userEmail:_name,
         animationController: AnimationController(
           duration: Duration(milliseconds: 180),
           vsync: this,
@@ -130,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   ChatMessage _createMessageFromImage(String imageUrl) => ChatMessage(
         imageUrl: imageUrl,
-        username: _name,
+        username: userEmail!=null?userEmail:_name,
         animationController: AnimationController(
           duration: Duration(milliseconds: 90),
           vsync: this,
@@ -177,20 +169,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   void _handleSubmitted(String text) {
     _textController.clear();
-    
-    ChatMessage message = ChatMessage(
+    ChatMessage message = _createMessageFromText(text);
+    /*ChatMessage message = ChatMessage(
       username: "hakan",
-      imageUrl: "https://avatars2.githubusercontent.com/u/22100241?s=460&u=fcc5bd24a8419cafaba4ab6c8507dd7defba9591&v=4",
+      imageUrl: null,
+      //imageUrl: "https://avatars2.githubusercontent.com/u/22100241?s=460&u=fcc5bd24a8419cafaba4ab6c8507dd7defba9591&v=4",
       text: text,
       animationController: AnimationController(
         // NEW
         duration: const Duration(milliseconds: 400), // NEW
         vsync: this, // NEW
       ), // NEW
-    ); // NEW
+    );*/ // NEW
     _messageDatabaseReference.push().set(message.toMap());
     setState(() {
-      _messages.insert(0, message);
+      //_messages.insert(0, message);
       _isComposing = false;
     });
 
@@ -207,15 +200,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         theme: kDefaultTheme,
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          floatingActionButton: Align(
-            alignment: Alignment.centerLeft,
-            child: FloatingActionButton(
-              onPressed: () {
-                _handleSubmitted(DateTime.now().second.toString());
-              },
-            ),
-          ),
-          appBar: AppBar(
+          appBar: AppBar(   
               //backgroundColor: Color(0xffE63323),
               title: Text(widget.chatRoom.name)),
           body: Column(
